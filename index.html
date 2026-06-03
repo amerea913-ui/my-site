@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Naun X</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #050816;
+  color: white;
+}
+
+/* top bar */
+header {
+  display:flex;
+  justify-content:space-between;
+  padding:15px;
+  background:#0d1b3a;
+  position:sticky;
+  top:0;
+}
+
+/* layout */
+.container {
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:10px;
+  padding:10px;
+}
+
+/* cards */
+.card {
+  background:#111c33;
+  border-radius:12px;
+  padding:15px;
+}
+
+/* crypto */
+.item {
+  display:flex;
+  justify-content:space-between;
+  padding:8px;
+  border-bottom:1px solid #222;
+}
+
+/* chat */
+#chatBox {
+  height:300px;
+  overflow:auto;
+  background:#0b1224;
+  padding:10px;
+  border-radius:10px;
+}
+
+input, button {
+  padding:10px;
+  margin-top:8px;
+  width:100%;
+  border:none;
+  border-radius:8px;
+}
+
+/* glow effect */
+.glow {
+  color:#00e5ff;
+  text-shadow:0 0 10px #00e5ff;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="glow">⚡ Naun X</div>
+  <div id="clock"></div>
+</header>
+
+<div class="container">
+
+  <!-- CRYPTO -->
+  <div class="card">
+    <h3>📊 Crypto Market</h3>
+    <div id="crypto"></div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="card">
+    <h3>💬 Live Chat (Demo)</h3>
+    <div id="chatBox"></div>
+    <input id="msg" placeholder="پیام بنویس...">
+    <button onclick="sendMsg()">Send</button>
+  </div>
+
+</div>
+
+<script>
+
+// clock
+setInterval(()=>{
+  document.getElementById("clock").innerText =
+  new Date().toLocaleTimeString();
+},1000);
+
+// crypto API
+async function loadCrypto(){
+  let res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd");
+  let data = await res.json();
+
+  crypto.innerHTML = data.slice(0,8).map(c =>
+    `<div class="item">
+      <span>${c.name}</span>
+      <span>$${c.current_price}</span>
+    </div>`
+  ).join("");
+}
+loadCrypto();
+
+// chat (local demo)
+function sendMsg(){
+  chatBox.innerHTML += "<div>🧑 " + msg.value + "</div>";
+  msg.value="";
+}
+</script>
+
+</body>
+</html>
